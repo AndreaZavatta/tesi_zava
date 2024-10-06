@@ -21,19 +21,19 @@ $query->execute();
 $query->execute();*/
 
 
-for($anno = 2022; $anno < 2023; $anno++){
+for($anno = 2023; $anno < 2024; $anno++){
     
     for($mese = 1; $mese <= 12; $mese++){
         //echo "SELECT codice_spira, " . $somma_per_orari . ", `codice via`, nome_via, direzione, longitudine, latitudine, geopoint FROM `rilevazione-flusso-veicoli-tramite-spire-anno-2022_rebuild` WHERE data LIKE \"" . $anno . "-" . sprintf('%02d', $mese) . "-%\" GROUP BY codice_spira, `codice via`, nome_via, direzione, longitudine, latitudine, geopoint";
         //break;
         
-        $query = $connection->prepare("CREATE TABLE `dati_mensili` AS SELECT codice_spira, " . $somma_per_orari . ", `codice via`, nome_via, direzione, longitudine, latitudine, geopoint FROM `rilevazione-flusso-veicoli-tramite-spire-anno-2022_rebuild` WHERE data LIKE \"" . $anno . "-" . sprintf('%02d', $mese) . "-%\" GROUP BY codice_spira, `codice via`, nome_via, direzione, longitudine, latitudine, geopoint");
+        $query = $connection->prepare("CREATE TABLE `dati_mensili` AS SELECT codice_spira, " . $somma_per_orari . ", `codice via`, nome_via, direzione, longitudine, latitudine, geopoint FROM `rilevazione_flusso_veicoli` WHERE data LIKE \"" . $anno . "-" . sprintf('%02d', $mese) . "-%\" GROUP BY codice_spira, `codice via`, nome_via, direzione, longitudine, latitudine, geopoint");
         $query->execute();
         $query = $connection->prepare("ALTER TABLE `dati_mensili` ADD `mese` VARCHAR(20) DEFAULT \"" . $mese . "\" FIRST, ADD `anno` INT DEFAULT " . $anno . " AFTER `mese`");
         $query->execute();
         /*$query = $connection->prepare("ALTER TABLE `dati_mensili` ADD PRIMARY KEY (`mese,`, `anno`, `codice_spira`)");
         $query->execute();*/
-        $query = $connection->prepare("INSERT INTO `rilevazione-flusso-veicoli-tramite-spire-dati-mensili` SELECT * FROM `dati_mensili` ON DUPLICATE KEY UPDATE `latitudine`=VALUES(`latitudine`), `longitudine`=VALUES(`longitudine`), geopoint=VALUES(`geopoint`)");
+        $query = $connection->prepare("INSERT INTO `rilevazione_flusso_veicoli` SELECT * FROM `dati_mensili` ON DUPLICATE KEY UPDATE `latitudine`=VALUES(`latitudine`), `longitudine`=VALUES(`longitudine`), geopoint=VALUES(`geopoint`)");
         $query->execute();
         $query = $connection->prepare("DROP TABLE `dati_mensili`");
         $query->execute();

@@ -66,7 +66,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
       }
       else{
         //echo "ciao";
-        $query = $connection->prepare("SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-dati-mensili` WHERE mese BETWEEN ? AND ? AND anno = ?");
+        $query = $connection->prepare("SELECT * FROM `rilevazione_flusso_veicoli` WHERE mese BETWEEN ? AND ? AND anno = ?");
         $query->bind_param("iii", $startMonth, $endMonth, $startYear);
       }
       //echo "SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-dati-mensili` WHERE mese BETWEEN " . $startMonth . " AND " . $endMonth . " AND anno BETWEEN " . $startYear . " AND " . $endYear;
@@ -80,7 +80,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
     //Se il mese ed anno di fine ed inizio sono gli stessi
     if(explode("-", $api_formatted_startDate)[1] == explode("-", $api_formatted_endDate)[1] && explode("-", $api_formatted_startDate)[0] == explode("-", $api_formatted_endDate)[0]){
       //echo "stesso mese e stesso anno";
-      $query = $connection->prepare("SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-anno-2022` WHERE data BETWEEN ? AND ?");
+      $query = $connection->prepare("SELECT * FROM `rilevazione_flusso_veicoli` WHERE data BETWEEN ? AND ?");
       $query->bind_param("ss", $api_formatted_startDate, $api_formatted_endDate);
       $query->execute();
       $result = $query->get_result();
@@ -94,7 +94,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
       $startOfEndMonth = date("Y-m-01", strtotime($api_formatted_endDate));
       //echo "SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-anno-2022` WHERE data BETWEEN " . $api_formatted_startDate . " AND ". $endOfStartingMonth . " AND data BETWEEN " . $startOfEndMonth . " AND ". $api_formatted_endDate;
       // SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-anno-2022` WHERE data BETWEEN 2021-10-30 AND 2021-10-31 AND data BETWEEN 2022-11-01 AND 2022-11-23 
-      $query = $connection->prepare("SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-anno-2022` WHERE data BETWEEN ? AND ? OR data BETWEEN ? AND ?");
+      $query = $connection->prepare("SELECT * FROM `rilevazione_flusso_veicoli` WHERE data BETWEEN ? AND ? OR data BETWEEN ? AND ?");
       $query->bind_param("ssss", $api_formatted_startDate, $endOfStartingMonth, $startOfEndMonth, $api_formatted_endDate);
       $query->execute();
       $result = $query->get_result();
@@ -110,7 +110,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
         if($diff->format("%a") > 60){
           return;
         }
-        $query = $connection->prepare("SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-anno-2022` WHERE data BETWEEN ? AND ?");
+        $query = $connection->prepare("SELECT * FROM `rilevazione_flusso_veicoli` WHERE data BETWEEN ? AND ?");
         $query->bind_param("ss", $api_formatted_startDate, $api_formatted_endDate);
         $query->execute();
         $result = $query->get_result();
@@ -126,7 +126,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
           $endMonth = clone($endDate);
           $endYear = explode("-", $endMonth->format("Y-m-d"))[0];
           $endMonth = explode("-", $endMonth->format("Y-m-d"))[1] - 1;        
-          $query = $connection->prepare("SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-dati-mensili` WHERE mese BETWEEN ? AND ? AND anno BETWEEN ? AND ?");
+          $query = $connection->prepare("SELECT * FROM `rilevazione_flusso_veicoli` WHERE mese BETWEEN ? AND ? AND anno BETWEEN ? AND ?");
           $query->bind_param("iiii", $startMonth, $endMonth, $startYear, $endYear);
           $query->execute();
           $result = $query->get_result();
@@ -165,7 +165,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
 
 
 function connection(){
-  $connection = new mysqli("127.0.0.1:3307", "root", "P4tchouliKnownledg3", "prova");
+  $connection = new mysqli("127.0.0.1:3306", "root", "ErZava01", "prova");
   if($connection->connect_error){
     die('Error connecting to the database');
   }
