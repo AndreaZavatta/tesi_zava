@@ -13,7 +13,7 @@ if ($connection->connect_error) {
 // Enable local_infile for this session
 $connection->query("SET GLOBAL local_infile = 1");
 
-// SQL query to create the table if it doesn't already exist
+// SQL query to create the table if it doesn't already exist, adding the new columns for time ranges
 $create_table_query = "
     CREATE TABLE IF NOT EXISTS rilevazione_flusso_veicoli (
         ID_univoco_stazione_spira VARCHAR(255),
@@ -44,6 +44,10 @@ $create_table_query = "
         `21:00-22:00` INT,
         `22:00-23:00` INT,
         `23:00-24:00` INT,
+        notte INT,
+        mattina INT,
+        pomeriggio INT,
+        sera INT,
         id_uni VARCHAR(255),
         Livello VARCHAR(255),
         tipologia VARCHAR(255),
@@ -60,7 +64,8 @@ $create_table_query = "
         angolo VARCHAR(255),
         longitudine FLOAT,
         latitudine FLOAT,
-        geopoint VARCHAR(255)
+        geopoint VARCHAR(255),
+        comune VARCHAR(255) DEFAULT 'Bologna'
     )
 ";
 
@@ -81,27 +86,88 @@ if (file_exists($csv_file_path)) {
     die("File not found: $csv_file_path<br>");
 }
 
-// SQL query to load the CSV data into the table
-$load_data_query = "
-    LOAD DATA LOCAL INFILE '$csv_file_path'
-    INTO TABLE rilevazione_flusso_veicoli
-    FIELDS TERMINATED BY ';'
-    LINES TERMINATED BY '\n'
-    IGNORE 1 LINES
-    (data, codice_spira, `00:00-01:00`, `01:00-02:00`, `02:00-03:00`, `03:00-04:00`, `04:00-05:00`, `05:00-06:00`, `06:00-07:00`,
-    `07:00-08:00`, `08:00-09:00`, `09:00-10:00`, `10:00-11:00`, `11:00-12:00`, `12:00-13:00`, `13:00-14:00`, `14:00-15:00`,
-    `15:00-16:00`, `16:00-17:00`, `17:00-18:00`, `18:00-19:00`, `19:00-20:00`, `20:00-21:00`, `21:00-22:00`, `22:00-23:00`,
-    `23:00-24:00`, id_uni, Livello, tipologia, codice, codice_arco, codice_via, Nome_via, Nodo_da, Nodo_a, ordinanza, stato,
-    codimpsem, direzione, angolo, longitudine, latitudine, geopoint, ID_univoco_stazione_spira, giorno_settimana)
-";
+// Open the CSV file and process it in batch
+$batch_size = 1000;  // Number of rows per batch
+$rows = [];  // Buffer to store rows for batch inserts
 
-// Execute the query to load the data
-if ($connection->query($load_data_query) === TRUE) {
-    echo "CSV data loaded successfully.<br>";
+if (($handle = fopen($csv_file_path, "r")) !== FALSE) {
+    fgetcsv($handle); // Skip the first row (header)
+
+    while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
+        // Validate: Ensure each field contains only numbers where expected
+        $valid_data = true;
+        for ($i = 4; $i <= 25; $i++) {
+            if (!is_numeric($data[$i])) {
+                echo "Invalid data detected in row. Skipping row: " . implode(', ', $data) . "<br>";
+                $valid_data = false;
+                break;
+            }
+        }
+
+        if (!$valid_data) {
+            continue;  // Skip this row if the data is not valid
+        }
+
+        // Calculate the time ranges
+        $notte = (int)$data[4] + (int)$data[5] + (int)$data[6] + (int)$data[7] + (int)$data[8] + (int)$data[9];  // 00:00 - 06:00
+        $mattina = (int)$data[10] + (int)$data[11] + (int)$data[12] + (int)$data[13] + (int)$data[14] + (int)$data[15];  // 06:00 - 12:00
+        $pomeriggio = (int)$data[16] + (int)$data[17] + (int)$data[18] + (int)$data[19] + (int)$data[20] + (int)$data[21];  // 12:00 - 18:00
+        $sera = (int)$data[22] + (int)$data[23] + (int)$data[24] + (int)$data[25];  // 18:00 - 24:00
+
+        $row = "('{$connection->real_escape_string($data[0])}', '{$connection->real_escape_string($data[1])}', '{$connection->real_escape_string($data[2])}', '{$connection->real_escape_string($data[3])}', '{$connection->real_escape_string($data[4])}', '{$connection->real_escape_string($data[5])}', '{$connection->real_escape_string($data[6])}', '{$connection->real_escape_string($data[7])}', '{$connection->real_escape_string($data[8])}', '{$connection->real_escape_string($data[9])}', '{$connection->real_escape_string($data[10])}', '{$connection->real_escape_string($data[11])}', '{$connection->real_escape_string($data[12])}', '{$connection->real_escape_string($data[13])}', '{$connection->real_escape_string($data[14])}', '{$connection->real_escape_string($data[15])}', '{$connection->real_escape_string($data[16])}', '{$connection->real_escape_string($data[17])}', '{$connection->real_escape_string($data[18])}', '{$connection->real_escape_string($data[19])}', '{$connection->real_escape_string($data[20])}', '{$connection->real_escape_string($data[21])}', '{$connection->real_escape_string($data[22])}', '{$connection->real_escape_string($data[23])}', '{$connection->real_escape_string($data[24])}', '{$connection->real_escape_string($data[25])}', '$notte', '$mattina', '$pomeriggio', '$sera', '{$connection->real_escape_string($data[26])}', '{$connection->real_escape_string($data[27])}', '{$connection->real_escape_string($data[28])}', '{$connection->real_escape_string($data[29])}', '{$connection->real_escape_string($data[30])}', '{$connection->real_escape_string($data[31])}', '{$connection->real_escape_string($data[32])}', '{$connection->real_escape_string($data[33])}', '{$connection->real_escape_string($data[34])}', '{$connection->real_escape_string($data[35])}', '{$connection->real_escape_string($data[36])}', '{$connection->real_escape_string($data[37])}', '{$connection->real_escape_string($data[38])}', '{$connection->real_escape_string($data[39])}', 
+        '{$connection->real_escape_string($data[40])}', '{$connection->real_escape_string($data[41])}', 
+        '{$connection->real_escape_string($data[42])}', '{$connection->real_escape_string($data[43])}', 
+        '{$connection->real_escape_string($data[44])}')";
+
+        $rows[] = $row;
+
+        // Inserisci batch una volta raggiunto il batch size
+        if (count($rows) >= $batch_size) {
+            $query = "INSERT INTO rilevazione_flusso_veicoli (data, codice_spira, `00:00-01:00`, `01:00-02:00`, `02:00-03:00`, 
+                `03:00-04:00`, `04:00-05:00`, `05:00-06:00`, `06:00-07:00`, `07:00-08:00`, `08:00-09:00`, `09:00-10:00`, 
+                `10:00-11:00`, `11:00-12:00`, `12:00-13:00`, `13:00-14:00`, `14:00-15:00`, `15:00-16:00`, `16:00-17:00`, 
+                `17:00-18:00`, `18:00-19:00`, `19:00-20:00`, `20:00-21:00`, `21:00-22:00`, `22:00-23:00`, `23:00-24:00`, 
+                notte, mattina, pomeriggio, sera, id_uni, Livello, tipologia, codice, codice_arco, codice_via, Nome_via, 
+                Nodo_da, Nodo_a, ordinanza, stato, codimpsem, direzione, angolo, longitudine, latitudine, geopoint, 
+                ID_univoco_stazione_spira, giorno_settimana) VALUES " . implode(',', $rows);
+
+            // Esegui l'inserimento batch
+            if ($connection->query($query) === TRUE) {
+                echo "Batch of data inserted successfully.<br>";
+            } else {
+                echo "Error inserting batch: " . $connection->error . "<br>";
+            }
+
+            // Svuota il buffer dopo l'inserimento
+            $rows = [];
+        }
+    }
+
+    // Inserisci le righe rimanenti non inserite nel batch precedente
+    if (count($rows) > 0) {
+        $query = "INSERT INTO rilevazione_flusso_veicoli (data, codice_spira, `00:00-01:00`, `01:00-02:00`, `02:00-03:00`, 
+            `03:00-04:00`, `04:00-05:00`, `05:00-06:00`, `06:00-07:00`, `07:00-08:00`, `08:00-09:00`, `09:00-10:00`, 
+            `10:00-11:00`, `11:00-12:00`, `12:00-13:00`, `13:00-14:00`, `14:00-15:00`, `15:00-16:00`, `16:00-17:00`, 
+            `17:00-18:00`, `18:00-19:00`, `19:00-20:00`, `20:00-21:00`, `21:00-22:00`, `22:00-23:00`, `23:00-24:00`, 
+            notte, mattina, pomeriggio, sera, id_uni, Livello, tipologia, codice, codice_arco, codice_via, Nome_via, 
+            Nodo_da, Nodo_a, ordinanza, stato, codimpsem, direzione, angolo, longitudine, latitudine, geopoint, 
+            ID_univoco_stazione_spira, giorno_settimana) VALUES " . implode(',', $rows);
+
+        // Esegui l'inserimento delle righe rimanenti
+        if ($connection->query($query) === TRUE) {
+            echo "Remaining data inserted successfully.<br>";
+        } else {
+            echo "Error inserting remaining data: " . $connection->error . "<br>";
+        }
+    }
+
+    // Chiudi il file CSV
+    fclose($handle);
+    echo "Data import completed successfully.<br>";
 } else {
-    echo "Error loading CSV data: " . $connection->error . "<br>";
+    echo "Error opening the CSV file.<br>";
 }
 
-// Close the database connection
+// Chiudi la connessione al database
 $connection->close();
 ?>
