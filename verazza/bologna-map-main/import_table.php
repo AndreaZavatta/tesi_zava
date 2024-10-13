@@ -108,11 +108,22 @@ if (($handle = fopen($csv_file_path, "r")) !== FALSE) {
             continue;  // Skip this row if the data is not valid
         }
 
-        // Calculate the time ranges
-        $notte = (int)$data[4] + (int)$data[5] + (int)$data[6] + (int)$data[7] + (int)$data[8] + (int)$data[9];  // 00:00 - 06:00
-        $mattina = (int)$data[10] + (int)$data[11] + (int)$data[12] + (int)$data[13] + (int)$data[14] + (int)$data[15];  // 06:00 - 12:00
-        $pomeriggio = (int)$data[16] + (int)$data[17] + (int)$data[18] + (int)$data[19] + (int)$data[20] + (int)$data[21];  // 12:00 - 18:00
-        $sera = (int)$data[22] + (int)$data[23] + (int)$data[24] + (int)$data[25];  // 18:00 - 24:00
+        // Calculate 'notte' (00:00-06:00)
+        $notte_values = [$data[2], $data[3], $data[4], $data[5], $data[6], $data[7]];
+        $notte = array_sum(array_map('intval', $notte_values));
+
+        // Calculate 'mattina' (06:00-12:00)
+        $mattina_values = [$data[8], $data[9], $data[10], $data[11], $data[12], $data[13]];
+        $mattina = array_sum(array_map('intval', $mattina_values));
+
+        // Calculate 'pomeriggio' (12:00-18:00)
+        $pomeriggio_values = [$data[14], $data[15], $data[16], $data[17], $data[18], $data[19]];
+        $pomeriggio = array_sum(array_map('intval', $pomeriggio_values));
+
+        // Calculate 'sera' (18:00-24:00)
+        $sera_values = [$data[20], $data[21], $data[22], $data[23], $data[24], $data[25]];
+        $sera = array_sum(array_map('intval', $sera_values));
+
 
         $row = "('{$connection->real_escape_string($data[0])}', '{$connection->real_escape_string($data[1])}', '{$connection->real_escape_string($data[2])}', '{$connection->real_escape_string($data[3])}', '{$connection->real_escape_string($data[4])}', '{$connection->real_escape_string($data[5])}', '{$connection->real_escape_string($data[6])}', '{$connection->real_escape_string($data[7])}', '{$connection->real_escape_string($data[8])}', '{$connection->real_escape_string($data[9])}', '{$connection->real_escape_string($data[10])}', '{$connection->real_escape_string($data[11])}', '{$connection->real_escape_string($data[12])}', '{$connection->real_escape_string($data[13])}', '{$connection->real_escape_string($data[14])}', '{$connection->real_escape_string($data[15])}', '{$connection->real_escape_string($data[16])}', '{$connection->real_escape_string($data[17])}', '{$connection->real_escape_string($data[18])}', '{$connection->real_escape_string($data[19])}', '{$connection->real_escape_string($data[20])}', '{$connection->real_escape_string($data[21])}', '{$connection->real_escape_string($data[22])}', '{$connection->real_escape_string($data[23])}', '{$connection->real_escape_string($data[24])}', '{$connection->real_escape_string($data[25])}', '$notte', '$mattina', '$pomeriggio', '$sera', '{$connection->real_escape_string($data[26])}', '{$connection->real_escape_string($data[27])}', '{$connection->real_escape_string($data[28])}', '{$connection->real_escape_string($data[29])}', '{$connection->real_escape_string($data[30])}', '{$connection->real_escape_string($data[31])}', '{$connection->real_escape_string($data[32])}', '{$connection->real_escape_string($data[33])}', '{$connection->real_escape_string($data[34])}', '{$connection->real_escape_string($data[35])}', '{$connection->real_escape_string($data[36])}', '{$connection->real_escape_string($data[37])}', '{$connection->real_escape_string($data[38])}', '{$connection->real_escape_string($data[39])}', 
         '{$connection->real_escape_string($data[40])}', '{$connection->real_escape_string($data[41])}', 
