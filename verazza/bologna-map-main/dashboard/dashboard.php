@@ -23,58 +23,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv_file'])) {
     $fileName = $_FILES['csv_file']['tmp_name'];
     
     if ($_FILES['csv_file']['size'] > 0) {
-        $file = fopen($fileName, 'r');
-        fgetcsv($file); // Salta la prima riga (intestazioni)
-
-        while (($column = fgetcsv($file, 10000, ";")) !== FALSE) {
-            // Inserisci i dati nel database
-            $sqlInsert = "INSERT INTO traffico_auto (col1, col2, ...) VALUES ('$column[0]', '$column[1]', ...)";
-            $connection->query($sqlInsert);
+        // Check if the file is a CSV file
+        if (pathinfo($_FILES['csv_file']['name'], PATHINFO_EXTENSION) !== 'csv') {
+            $passwordError = "Seleziona un file CSV valido.";
+        } else {
+            // Include the import script to process the CSV file
+            require "../import_table.php";
         }
-
-        fclose($file);
-        $successMessage = "File caricato con successo!";
     } else {
         $passwordError = "Seleziona un file CSV valido.";
-    }
-}
-
-// Modifica password
-if (isset($_POST['update_password'])) {
-    $oldPassword = $_POST['old_password'];
-    $newPassword = $_POST['new_password'];
-    $confirmNewPassword = $_POST['confirm_new_password'];
-    $adminId = $_SESSION['admin_id'];
-
-    if (strlen($newPassword) < 8 || !preg_match("/[A-Z]/", $newPassword) || !preg_match("/[a-z]/", $newPassword) || !preg_match("/[0-9]/", $newPassword) || !preg_match("/[\W]/", $newPassword)) {
-        $passwordError = "La nuova password deve contenere almeno 8 caratteri, includere una lettera maiuscola, una minuscola, un numero e un carattere speciale.";
-    }
-
-    if ($newPassword !== $confirmNewPassword) {
-        $passwordError = "Le nuove password non corrispondono.";
-    }
-
-    if (empty($passwordError)) {
-        $result = $connection->query("SELECT password_hash FROM admin WHERE id = $adminId");
-        if ($row = $result->fetch_assoc()) {
-            $hashedPassword = $row['password_hash'];
-
-            if (password_verify($oldPassword, $hashedPassword)) {
-                $newHashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-                $stmt = $connection->prepare("UPDATE admin SET password_hash = ? WHERE id = ?");
-                $stmt->bind_param('si', $newHashedPassword, $adminId);
-
-                if ($stmt->execute()) {
-                    $successMessage = "Password aggiornata con successo!";
-                } else {
-                    $passwordError = "Errore durante l'aggiornamento della password.";
-                }
-            } else {
-                $passwordError = "La vecchia password non è corretta.";
-            }
-        } else {
-            $passwordError = "Errore nel recupero dei dati utente.";
-        }
     }
 }
 ?>
