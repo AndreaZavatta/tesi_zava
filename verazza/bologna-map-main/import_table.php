@@ -77,7 +77,7 @@ if ($connection->query($create_table_query) === TRUE) {
 }
 
 // Path to the CSV file
-$csv_file_path = 'C:/xampp/htdocs/tesi_zava/verazza/bologna-map-main/rilevazione-flusso-veicoli-tramite-spire-anno-2023.csv';
+$csv_file_path = 'C:/xampp/htdocs/tesi_zava/verazza/bologna-map-main/csvFiles/rilevazione-flusso-veicoli-tramite-spire-anno-2024.csv';
 
 // Check if the file exists
 if (file_exists($csv_file_path)) {
