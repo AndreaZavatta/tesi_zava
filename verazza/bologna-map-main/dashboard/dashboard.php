@@ -101,7 +101,7 @@
                 if (isset($_SESSION['admin_id'])) {
                     $adminId = $_SESSION['admin_id'];
                     // Connessione al database
-                    $connection = new mysqli('localhost', 'root', 'ErZava01', 'prova', 3306);
+                    $connection = new mysqli('127.0.0.1', 'root', '', 'prova', 3306);
                     // Controllo connessione
                     if ($connection->connect_error) {
                         die("Connessione fallita: " . $connection->connect_error);

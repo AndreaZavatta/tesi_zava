@@ -2,7 +2,8 @@
 session_start();
 
 // Connessione al database
-$connection = new mysqli('localhost', 'root', 'ErZava01', 'prova', 3306);
+// Connect to MySQL server (without specifying the database first)
+$connection = new mysqli('127.0.0.1', 'root', '', 'prova', 3306);
 
 // Controllo connessione
 if ($connection->connect_error) {

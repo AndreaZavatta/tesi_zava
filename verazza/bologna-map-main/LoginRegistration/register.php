@@ -1,50 +1,81 @@
 <?php
 session_start();
 
-// Connessione al database
-$connection = new mysqli('localhost', 'root', 'ErZava01', 'prova', 3306);
+// Connect to MySQL server (without specifying the database first)
+$connection = new mysqli('127.0.0.1', 'root', '', '', 3306);
 
-// Controllo connessione
+// Check connection
 if ($connection->connect_error) {
-    die("Connessione fallita: " . $connection->connect_error);
+    die("Connection failed: " . $connection->connect_error);
 }
 
+// Check if the database exists
+$dbName = 'prova';
+$dbCheck = $connection->query("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$dbName'");
+
+if ($dbCheck->num_rows == 0) {
+    // If database doesn't exist, create it
+    $createDB = "CREATE DATABASE $dbName";
+    if ($connection->query($createDB) === TRUE) {
+        echo "Database created successfully";
+    } else {
+        die("Error creating database: " . $connection->error);
+    }
+}
+
+// Now select the database
+$connection->select_db($dbName);
+
+// Check and create the 'admin' table if it doesn't exist
+$createTableQuery = "
+    CREATE TABLE IF NOT EXISTS admin (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL
+    );
+";
+if ($connection->query($createTableQuery) !== TRUE) {
+    die("Error creating table: " . $connection->error);
+}
+
+
+// Now you can proceed with the rest of your code
 $errorMessage = '';
 
-// Funzione per registrare un nuovo utente
+// Function to register a new user
 function register($username, $password, $connection) {
     global $errorMessage;
 
-    // Vincoli lato server per la password
-    if (strlen($password) < 8 || !preg_match("/[A-Z]/", $password) || !preg_match("/[a-z]/", $password) || !preg_match("/[0-9]/", $password) || !preg_match("/[\W]/", $password)) {
-        $errorMessage = "La password non soddisfa i requisiti di sicurezza!";
+    // Server-side password constraints
+    if (strlen($password) < 8 || !preg_match("/[A-Z]/", $password) || !preg_match("/[a-z]/", $password) || !preg_match("/[0-9]/", $password) || !preg_match("/[\\W]/", $password)) {
+        $errorMessage = "Password does not meet the security requirements!";
         return;
     }
 
-    // Controlla se l'username esiste già
+    // Check if the username already exists
     $checkUserExists = $connection->prepare("SELECT * FROM admin WHERE username = ?");
     $checkUserExists->bind_param('s', $username);
     $checkUserExists->execute();
     $checkUserExists->store_result();
 
     if ($checkUserExists->num_rows > 0) {
-        $errorMessage = "L'username è già in uso!";
+        $errorMessage = "Username is already taken!";
         return;
     }
 
-    // Hash della password
+    // Hash the password
     $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-    // Inserisci il nuovo utente
+    // Insert the new user
     $stmt = $connection->prepare("INSERT INTO admin (username, password_hash) VALUES (?, ?)");
     $stmt->bind_param('ss', $username, $passwordHash);
 
     if ($stmt->execute()) {
-        // Reindirizza al login dopo una registrazione riuscita
+        // Redirect to login after successful registration
         header('Location: login.php?message=success');
         exit();
     } else {
-        $errorMessage = "Errore nella registrazione: " . $connection->error;
+        $errorMessage = "Error registering: " . $connection->error;
     }
 
     $stmt->close();
@@ -62,22 +93,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrazione Utente</title>
-    <link rel="stylesheet" href="style.css"> <!-- Collegamento al file CSS esterno -->
+    <title>Registrazione</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
     <style>
+        .form-container {
+            width: 300px;
+            margin: 0 auto;
+        }
         .error-message {
             color: red;
-            font-size: 14px;
-            margin-bottom: 15px;
-            text-align: center;
-            display: block;
-            padding: 10px;
-            background-color: #ffe5e5;
-            border-radius: 5px;
         }
     </style>
     <script>
         function validatePassword() {
+			const password = document.getElementById("password").value;
+			const errorMessage = document.getElementById("password-error");
+
+			console.log("Password entered:", password); // Check if the password is being captured
+
+			// Password constraints
+			const regexLower = /[a-z]/;
+			const regexUpper = /[A-Z]/;
+			const regexNumber = /[0-9]/;
+			const regexSpecial = /[^a-zA-Z0-9]/;
+
+			if (password.length < 8 || !regexLower.test(password) || !regexUpper.test(password) || !regexNumber.test(password) || !regexSpecial.test(password)) {
+				errorMessage.style.display = "block";
+				console.log("Password validation failed");
+				return false;
+			} else {
+				errorMessage.style.display = "none";
+				console.log("Password validation passed");
+				return true;
+			}
+		}
+
             const password = document.getElementById("password").value;
             const errorMessage = document.getElementById("password-error");
 
@@ -85,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             const regexLower = /[a-z]/;
             const regexUpper = /[A-Z]/;
             const regexNumber = /[0-9]/;
-            const regexSpecial = /[\W]/;
+            const regexSpecial = /[\\W]/;
             
             if (password.length < 8 || !regexLower.test(password) || !regexUpper.test(password) || !regexNumber.test(password) || !regexSpecial.test(password)) {
                 errorMessage.style.display = "block";
