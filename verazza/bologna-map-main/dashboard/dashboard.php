@@ -86,6 +86,9 @@
                 <input type="file" name="csv_file" accept=".csv" required>
                 <button type="submit">Carica File</button>
             </form>
+
+            <!-- Button to delete the table -->
+            <button id="delete-table-btn" onclick="deleteTable()">Elimina Tabella</button>
         </div>
 
         <!-- Tab contenuto: Profilo -->
@@ -93,7 +96,36 @@
             <h3>Il tuo profilo</h3>
             <p>Username: 
                 <?php
-                // Codice per visualizzare l'username
+				session_start(); 
+                // Verifica se l'utente è loggato
+                if (isset($_SESSION['admin_id'])) {
+                    $adminId = $_SESSION['admin_id'];
+                    // Connessione al database
+                    $connection = new mysqli('localhost', 'root', 'ErZava01', 'prova', 3306);
+                    // Controllo connessione
+                    if ($connection->connect_error) {
+                        die("Connessione fallita: " . $connection->connect_error);
+                    }
+
+                    // Query per ottenere l'username
+                    $query = "SELECT username FROM admin WHERE id = ?";
+                    $stmt = $connection->prepare($query);
+                    $stmt->bind_param('i', $adminId);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+
+                    if ($result->num_rows > 0) {
+                        $row = $result->fetch_assoc();
+                        echo htmlspecialchars($row['username']); // Visualizza l'username
+                    } else {
+                        echo "Errore nel recupero del profilo.";
+                    }
+
+                    $stmt->close(); // Chiudi lo statement
+                    $connection->close(); // Chiudi la connessione
+                } else {
+                    echo "Non sei loggato.";
+                }
                 ?>
             </p>
         </div>
@@ -102,7 +134,6 @@
         <div class="tab-content">
             <h3>Cambia la tua password</h3>
             <form action="dashboard.php" method="POST" onsubmit="return validatePasswordForm()">
-                <!-- Campi per la modifica della password -->
                 <label for="old_password">Vecchia Password:</label>
                 <input type="password" id="old_password" name="old_password" required>
 
@@ -115,9 +146,6 @@
                 <button type="submit">Aggiorna Password</button>
             </form>
         </div>
-
-        <!-- Button to delete the table -->
-        <button id="delete-table-btn" onclick="deleteTable()">Elimina Tabella</button>
 
         <!-- Elemento per visualizzare il riepilogo -->
         <div id="summary" style="display: none;">
