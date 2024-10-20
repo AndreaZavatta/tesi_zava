@@ -27,6 +27,9 @@ function createTables($connection) {
         id INT AUTO_INCREMENT PRIMARY KEY,
         spira_id INT,
         `data` DATE,
+        giorno INT,
+        mese INT,
+        anno INT,
         giorno_settimana VARCHAR(255),
         codice_spira VARCHAR(255),
         `00:00-01:00` INT,
@@ -128,6 +131,10 @@ function importData($connection) {
                 session_write_close();
 
                 $data_rilevazione = $data[0];
+                $date_parts = explode('-', $data_rilevazione);
+                $giorno = (int) $date_parts[2]; 
+                $mese = (int) $date_parts[1];   
+                $anno = (int) $date_parts[0]; 
                 $codice_spira = $data[1];
                 $livello = $data[27];
                 $tipologia = $data[28];
@@ -157,25 +164,25 @@ function importData($connection) {
 
                 // Insert data into 'rilevazione_flusso_veicoli' table
                 $query_flusso = "INSERT INTO rilevazione_flusso_veicoli (
-                    spira_id, `data`, giorno_settimana, codice_spira, `00:00-01:00`, `01:00-02:00`, 
+                    spira_id, `data`,giorno, mese, anno, giorno_settimana, codice_spira, `00:00-01:00`, `01:00-02:00`, 
                     `02:00-03:00`, `03:00-04:00`, `04:00-05:00`, `05:00-06:00`, `06:00-07:00`, 
                     `07:00-08:00`, `08:00-09:00`, `09:00-10:00`, `10:00-11:00`, `11:00-12:00`, 
                     `12:00-13:00`, `13:00-14:00`, `14:00-15:00`, `15:00-16:00`, `16:00-17:00`, 
                     `17:00-18:00`, `18:00-19:00`, `19:00-20:00`, `20:00-21:00`, `21:00-22:00`, 
                     `22:00-23:00`, `23:00-24:00`, notte, mattina, pomeriggio, sera
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                 $stmt_flusso = $connection->prepare($query_flusso);
 
                 // Bind the parameters for the query
                 $params = array_merge(
-                    [$spira_id, $data_rilevazione, $giorno_settimana, $data[1]], // Adjust the index for `codice_spira`
+                    [$spira_id, $data_rilevazione, $giorno, $mese, $anno, $giorno_settimana, $data[1]], // Adjust the index for `codice_spira`
                     $hourly_data,
                     [$notte, $mattina, $pomeriggio, $sera]
                 );
 
                 // Create the types string
-                $types = 'isss' . str_repeat('i', 24) . 'iiii';
+                $types = 'isiiiss' . str_repeat('i', 24) . 'iiii';
 
                 // Bind the parameters and execute
                 $stmt_flusso->bind_param($types, ...$params);
