@@ -109,23 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			}
 		}
 
-            const password = document.getElementById("password").value;
-            const errorMessage = document.getElementById("password-error");
-
-            // Vincoli per la password
-            const regexLower = /[a-z]/;
-            const regexUpper = /[A-Z]/;
-            const regexNumber = /[0-9]/;
-            const regexSpecial = /[\\W]/;
-            
-            if (password.length < 8 || !regexLower.test(password) || !regexUpper.test(password) || !regexNumber.test(password) || !regexSpecial.test(password)) {
-                errorMessage.style.display = "block";
-                return false;
-            } else {
-                errorMessage.style.display = "none";
-                return true;
-            }
-        }
 
         function validateForm() {
             return validatePassword();
