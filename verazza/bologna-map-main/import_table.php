@@ -1,166 +1,200 @@
 <?php
+require "./db_connection.php";
 session_start();
 
-// Controlla se è stato caricato un file CSV
-if (isset($_FILES['csv_file']['tmp_name'])) {
-    $csv_file_path = $_FILES['csv_file']['tmp_name'];
-
-    // Controlla se il file esiste
-    if (!file_exists($csv_file_path)) {
-        die("File non trovato: " . $csv_file_path);
-    }
-
-    // Stabilire una connessione al database MySQL
-    $connection = new mysqli('localhost', 'root', 'ErZava01', 'prova', 3306);
-    if ($connection->connect_error) {
-        die("Connessione fallita: " . $connection->connect_error);
-    }
-
-    // Creazione della tabella se non esiste
-    $create_table_query = "
-        CREATE TABLE IF NOT EXISTS rilevazione_flusso_veicoli (
-            ID_univoco_stazione_spira VARCHAR(255),
-            data DATE,
-            giorno_settimana VARCHAR(255),
-            codice_spira VARCHAR(255),
-            `00:00-01:00` INT,
-            `01:00-02:00` INT,
-            `02:00-03:00` INT,
-            `03:00-04:00` INT,
-            `04:00-05:00` INT,
-            `05:00-06:00` INT,
-            `06:00-07:00` INT,
-            `07:00-08:00` INT,
-            `08:00-09:00` INT,
-            `09:00-10:00` INT,
-            `10:00-11:00` INT,
-            `11:00-12:00` INT,
-            `12:00-13:00` INT,
-            `13:00-14:00` INT,
-            `14:00-15:00` INT,
-            `15:00-16:00` INT,
-            `16:00-17:00` INT,
-            `17:00-18:00` INT,
-            `18:00-19:00` INT,
-            `19:00-20:00` INT,
-            `20:00-21:00` INT,
-            `21:00-22:00` INT,
-            `22:00-23:00` INT,
-            `23:00-24:00` INT,
-            notte INT,
-            mattina INT,
-            pomeriggio INT,
-            sera INT,
-            id_uni VARCHAR(255),
-            Livello VARCHAR(255),
+// Funzione per creare le tabelle se non esistono
+function createTables($connection) {
+    $queries = [
+        "CREATE TABLE IF NOT EXISTS comuni (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            nome VARCHAR(255) NOT NULL UNIQUE,
+            descrizione TEXT
+        )",
+        "CREATE TABLE IF NOT EXISTS spira (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            codice_spira VARCHAR(255) NOT NULL,
+            livello VARCHAR(255),
             tipologia VARCHAR(255),
-            codice VARCHAR(255),
             codice_arco VARCHAR(255),
             codice_via VARCHAR(255),
-            Nome_via VARCHAR(255),
-            Nodo_da VARCHAR(255),
-            Nodo_a VARCHAR(255),
-            ordinanza VARCHAR(255),
-            stato VARCHAR(255),
-            codimpsem VARCHAR(255),
-            direzione VARCHAR(255),
-            angolo VARCHAR(255),
-            longitudine FLOAT,
-            latitudine FLOAT,
-            geopoint VARCHAR(255),
-            comune VARCHAR(255) DEFAULT 'Bologna'
-        )
-    ";
+            nodo_da VARCHAR(255),
+            nodo_a VARCHAR(255),
+            longitudine VARCHAR(255),
+            latitudine VARCHAR(255),
+            comune_id INT, 
+            FOREIGN KEY (comune_id) REFERENCES comuni(id)
+        )",
+        "CREATE TABLE IF NOT EXISTS rilevazione_flusso_veicoli (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        spira_id INT,
+        `data` DATE,
+        giorno_settimana VARCHAR(255),
+        codice_spira VARCHAR(255),
+        `00:00-01:00` INT,
+        `01:00-02:00` INT,
+        `02:00-03:00` INT,
+        `03:00-04:00` INT,
+        `04:00-05:00` INT,
+        `05:00-06:00` INT,
+        `06:00-07:00` INT,
+        `07:00-08:00` INT,
+        `08:00-09:00` INT,
+        `09:00-10:00` INT,
+        `10:00-11:00` INT,
+        `11:00-12:00` INT,
+        `12:00-13:00` INT,
+        `13:00-14:00` INT,
+        `14:00-15:00` INT,
+        `15:00-16:00` INT,
+        `16:00-17:00` INT,
+        `17:00-18:00` INT,
+        `18:00-19:00` INT,
+        `19:00-20:00` INT,
+        `20:00-21:00` INT,
+        `21:00-22:00` INT,
+        `22:00-23:00` INT,
+        `23:00-24:00` INT,
+        notte INT,
+        mattina INT,
+        pomeriggio INT,
+        sera INT,
+        FOREIGN KEY (spira_id) REFERENCES spira(id)
+    )"
+    ];
 
-    if ($connection->query($create_table_query) !== TRUE) {
-        die("Errore nella creazione della tabella: " . $connection->error . "<br>");
+    foreach ($queries as $query) {
+        if ($connection->query($query) !== TRUE) {
+            echo "Errore nella creazione della tabella: " . $connection->error . "<br>";
+        }
     }
+}
 
-    // Conta le righe totali nel file CSV
-    $total_rows = count(file($csv_file_path)) - 1; // Escludi l'intestazione
+// Funzione per importare dati nelle tabelle
+// Your importData function
+function importData($connection) {
     $successful_inserts = 0;
     $skipped_rows = 0;
 
-    // Apri il file CSV
-    if (($handle = fopen($csv_file_path, "r")) !== FALSE) {
-        fgetcsv($handle); // Salta la prima riga (header)
-        $rows = [];
+    if (isset($_FILES['csv_file']['tmp_name'])) {
+        $csv_file_path = $_FILES['csv_file']['tmp_name'];
 
-        while (($data = fgetcsv($handle, 10000, ";")) !== FALSE) {
-            // Validazione dei campi numerici
-            $valid_data = true;
-            for ($i = 4; $i <= 25; $i++) {
-                if (!is_numeric($data[$i])) {
-                    $skipped_rows++;
-                    $valid_data = false;
-                    break;
-                }
-            }
+        if (($handle = fopen($csv_file_path, "r")) !== FALSE) {
+            fgetcsv($handle); // Skip header
 
-            if (!$valid_data) {
-                continue;  // Salta le righe non valide
-            }
+            $nome_comune = 'Bologna'; // Assign 'Bologna' to a variable
+            $query_comuni_check = "SELECT id FROM comuni WHERE nome = ?";
+            $stmt_comuni_check = $connection->prepare($query_comuni_check);
+            $stmt_comuni_check->bind_param('s', $nome_comune); // Pass the variable, not a string literal
+            $stmt_comuni_check->execute();
+            $result_comuni = $stmt_comuni_check->get_result();
 
-            // Calcola i valori basati sul tempo
-            $notte_values = [$data[2], $data[3], $data[4], $data[5], $data[6], $data[7]];
-            $notte = array_sum(array_map('intval', $notte_values));
 
-            $mattina_values = [$data[8], $data[9], $data[10], $data[11], $data[12], $data[13]];
-            $mattina = array_sum(array_map('intval', $mattina_values));
-
-            $pomeriggio_values = [$data[14], $data[15], $data[16], $data[17], $data[18], $data[19]];
-            $pomeriggio = array_sum(array_map('intval', $pomeriggio_values));
-
-            $sera_values = [$data[20], $data[21], $data[22], $data[23], $data[24], $data[25]];
-            $sera = array_sum(array_map('intval', $sera_values));
-
-            // Prepara i dati per l'inserimento
-            $row = "('{$connection->real_escape_string($data[0])}', '{$connection->real_escape_string($data[1])}', '{$connection->real_escape_string($data[2])}', '{$connection->real_escape_string($data[3])}', '{$connection->real_escape_string($data[4])}', '{$connection->real_escape_string($data[5])}', '{$connection->real_escape_string($data[6])}', '{$connection->real_escape_string($data[7])}', '{$connection->real_escape_string($data[8])}', '{$connection->real_escape_string($data[9])}', '{$connection->real_escape_string($data[10])}', '{$connection->real_escape_string($data[11])}', '{$connection->real_escape_string($data[12])}', '{$connection->real_escape_string($data[13])}', '{$connection->real_escape_string($data[14])}', '{$connection->real_escape_string($data[15])}', '{$connection->real_escape_string($data[16])}', '{$connection->real_escape_string($data[17])}', '{$connection->real_escape_string($data[18])}', '{$connection->real_escape_string($data[19])}', '{$connection->real_escape_string($data[20])}', '{$connection->real_escape_string($data[21])}', '{$connection->real_escape_string($data[22])}', '{$connection->real_escape_string($data[23])}', '{$connection->real_escape_string($data[24])}', '{$connection->real_escape_string($data[25])}', '$notte', '$mattina', '$pomeriggio', '$sera', '{$connection->real_escape_string($data[26])}', '{$connection->real_escape_string($data[27])}', '{$connection->real_escape_string($data[28])}', '{$connection->real_escape_string($data[29])}', '{$connection->real_escape_string($data[30])}', '{$connection->real_escape_string($data[31])}', '{$connection->real_escape_string($data[32])}', '{$connection->real_escape_string($data[33])}', '{$connection->real_escape_string($data[34])}', '{$connection->real_escape_string($data[35])}', '{$connection->real_escape_string($data[36])}', '{$connection->real_escape_string($data[37])}', '{$connection->real_escape_string($data[38])}', '{$connection->real_escape_string($data[39])}', '{$connection->real_escape_string($data[40])}', '{$connection->real_escape_string($data[41])}', '{$connection->real_escape_string($data[42])}', '{$connection->real_escape_string($data[43])}', '{$connection->real_escape_string($data[44])}')";
-            
-            $rows[] = $row;
-
-            // Inserimento batch
-            if (count($rows) >= 500) {
-                $query = "INSERT INTO rilevazione_flusso_veicoli (data, codice_spira, `00:00-01:00`, `01:00-02:00`, `02:00-03:00`, `03:00-04:00`, `04:00-05:00`, `05:00-06:00`, `06:00-07:00`, `07:00-08:00`, `08:00-09:00`, `09:00-10:00`, `10:00-11:00`, `11:00-12:00`, `12:00-13:00`, `13:00-14:00`, `14:00-15:00`, `15:00-16:00`, `16:00-17:00`, `17:00-18:00`, `18:00-19:00`, `19:00-20:00`, `20:00-21:00`, `21:00-22:00`, `22:00-23:00`, `23:00-24:00`, notte, mattina, pomeriggio, sera, id_uni, Livello, tipologia, codice, codice_arco, codice_via, Nome_via, Nodo_da, Nodo_a, ordinanza, stato, codimpsem, direzione, angolo, longitudine, latitudine, geopoint, ID_univoco_stazione_spira, giorno_settimana) VALUES " . implode(',', $rows);
-
-                if ($connection->query($query) === TRUE) {
-                    $successful_inserts += count($rows); // Aggiorna il conteggio delle righe inserite
+                if ($result_comuni->num_rows > 0) {
+                    // Comune exists, fetch its ID
+                    $comune_id = $result_comuni->fetch_assoc()['id'];
                 } else {
-                    echo "Errore durante l'inserimento del batch: " . $connection->error . "<br>";
+                    // Comune does not exist, insert it
+                    $nome_comune = 'Bologna';
+                    $descrizione_comune = 'Prova'; 
+
+                    $query_comuni = "INSERT INTO comuni (nome, descrizione) VALUES (?, ?)";
+                    $stmt_comuni = $connection->prepare($query_comuni);
+                    $stmt_comuni->bind_param('ss', $nome_comune, $descrizione_comune); // Bind variables instead of literals
+                    $stmt_comuni->execute();
+
+
+                    $comune_id = $connection->insert_id; // Fetch the newly inserted comune's ID
                 }
 
-                $rows = [];  // Svuota il buffer
+            while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
+                // Extract data from CSV
+                $data_rilevazione = $data[0];
+                $codice_spira = $data[1];
+                $livello = $data[27];
+                $tipologia = $data[28];
+                $codice_arco = $data[30];
+                $codice_via = $data[31];
+                $nodo_da = $data[33];
+                $nodo_a = $data[34];
+                $longitudine = $data[40];
+                $latitudine = $data[41];
+                $giorno_settimana = $data[44];
+
+                // Station does not exist, insert it
+                $query_spira = "INSERT INTO spira (codice_spira, livello, tipologia, codice_arco, codice_via, nodo_da, nodo_a, longitudine, latitudine) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $stmt_spira = $connection->prepare($query_spira);
+                $stmt_spira->bind_param('sssssssss', $codice_spira, $livello, $tipologia, $codice_arco, $codice_via, $nodo_da, $nodo_a, $longitudine, $latitudine);
+                $stmt_spira->execute();
+                $spira_id = $connection->insert_id; // Fetch the newly inserted station's ID
+
+                // Prepare the hourly data for insertion
+                $hourly_data = array_map('intval', array_slice($data, 5, 24));
+
+                // Calculate nighttime, morning, afternoon, evening
+                $notte = array_sum(array_slice($hourly_data, 0, 6));
+                $mattina = array_sum(array_slice($hourly_data, 6, 6));
+                $pomeriggio = array_sum(array_slice($hourly_data, 12, 6));
+                $sera = array_sum(array_slice($hourly_data, 18, 6));
+
+                // Insert data into 'rilevazione_flusso_veicoli' table
+                $query_flusso = "INSERT INTO rilevazione_flusso_veicoli (
+                    spira_id, `data`, giorno_settimana, codice_spira, `00:00-01:00`, `01:00-02:00`, 
+                    `02:00-03:00`, `03:00-04:00`, `04:00-05:00`, `05:00-06:00`, `06:00-07:00`, 
+                    `07:00-08:00`, `08:00-09:00`, `09:00-10:00`, `10:00-11:00`, `11:00-12:00`, 
+                    `12:00-13:00`, `13:00-14:00`, `14:00-15:00`, `15:00-16:00`, `16:00-17:00`, 
+                    `17:00-18:00`, `18:00-19:00`, `19:00-20:00`, `20:00-21:00`, `21:00-22:00`, 
+                    `22:00-23:00`, `23:00-24:00`, notte, mattina, pomeriggio, sera
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+                $stmt_flusso = $connection->prepare($query_flusso);
+
+                // Bind the parameters for the query
+                $params = array_merge(
+                    [$spira_id, $data_rilevazione, $giorno_settimana, $data[1]], // Adjust the index for `codice_spira`
+                    $hourly_data,
+                    [$notte, $mattina, $pomeriggio, $sera]
+                );
+
+                // Create the types string
+                $types = 'isss' . str_repeat('i', 24) . 'iiii';
+
+                // Bind the parameters and execute
+                $stmt_flusso->bind_param($types, ...$params);
+
+                if ($stmt_flusso->execute()) {
+                    $successful_inserts++;
+                } else {
+                    $skipped_rows++;
+                }
             }
+
+            fclose($handle);
+        } else {
+            echo "Errore nell'apertura del file CSV.";
         }
-
-        // Inserisci le righe rimanenti
-        if (count($rows) > 0) {
-            $query = "INSERT INTO rilevazione_flusso_veicoli (data, codice_spira, `00:00-01:00`, `01:00-02:00`, `02:00-03:00`, `03:00-04:00`, `04:00-05:00`, `05:00-06:00`, `06:00-07:00`, `07:00-08:00`, `08:00-09:00`, `09:00-10:00`, `10:00-11:00`, `11:00-12:00`, `12:00-13:00`, `13:00-14:00`, `14:00-15:00`, `15:00-16:00`, `16:00-17:00`, `17:00-18:00`, `18:00-19:00`, `19:00-20:00`, `20:00-21:00`, `21:00-22:00`, `22:00-23:00`, `23:00-24:00`, notte, mattina, pomeriggio, sera, id_uni, Livello, tipologia, codice, codice_arco, codice_via, Nome_via, Nodo_da, Nodo_a, ordinanza, stato, codimpsem, direzione, angolo, longitudine, latitudine, geopoint, ID_univoco_stazione_spira, giorno_settimana) VALUES " . implode(',', $rows);
-
-            if ($connection->query($query) === TRUE) {
-                $successful_inserts += count($rows); // Aggiorna il conteggio delle righe inserite
-            } else {
-                echo "Errore durante l'inserimento delle righe rimanenti: " . $connection->error . "<br>";
-            }
-        }
-
-        // Chiudi il file CSV
-        fclose($handle);
-
-        // Restituisci un riepilogo delle righe elaborate
-        echo json_encode([
-            "message" => "Elaborazione completata!",
-            "successful_inserts" => $successful_inserts,
-            "skipped_rows" => $skipped_rows,
-            "total_rows" => $total_rows
-        ]);
     } else {
-        echo "Errore nell'apertura del file CSV.";
+        echo "Nessun file CSV fornito.";
     }
 
-    // Chiudi la connessione al database
-    $connection->close();
-} else {
-    echo "Nessun file CSV fornito.";
+    return [
+        "successful_inserts" => $successful_inserts,
+        "skipped_rows" => $skipped_rows
+    ];
 }
+
+
+
+
+
+
+
+
+// Creare le tabelle
+createTables($connection);
+
+// Importare i dati e ottenere il riepilogo
+importData($connection);
+
+// Chiudere la connessione
+$connection->close();
 ?>
