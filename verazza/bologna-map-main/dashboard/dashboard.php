@@ -97,17 +97,11 @@
             <h3>Il tuo profilo</h3>
             <p>Username: 
                 <?php
+                require "../db_connection.php";
 				session_start(); 
                 // Verifica se l'utente è loggato
                 if (isset($_SESSION['admin_id'])) {
                     $adminId = $_SESSION['admin_id'];
-                    // Connessione al database
-                    $connection = new mysqli('127.0.0.1', 'root', '', 'prova', 3306);
-                    // Controllo connessione
-                    if ($connection->connect_error) {
-                        die("Connessione fallita: " . $connection->connect_error);
-                    }
-
                     // Query per ottenere l'username
                     $query = "SELECT username FROM admin WHERE id = ?";
                     $stmt = $connection->prepare($query);
