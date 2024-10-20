@@ -68,7 +68,8 @@
         <!-- Spinner Container -->
         <div id="loading-spinner" class="spinner">
             <div class="loader"></div>
-            <p>Caricamento in corso...</p>
+            <p id="progress-text">Caricamento dati... 0%</p>
+            <button id="stop-import-btn" style="margin-top: 10px;">Interrompi Importazione</button> <!-- Stop Import Button -->
         </div>
 
         <!-- Menu Tabs -->
@@ -88,7 +89,7 @@
             </form>
 
             <!-- Button to delete the table -->
-            <button id="delete-table-btn" onclick="deleteTable()">Elimina Tabella</button>
+            <button id="delete-table-btn" onclick="deleteAllTables();">Elimina Tabelle</button>
         </div>
 
         <!-- Tab contenuto: Profilo -->
@@ -162,56 +163,6 @@
     </div>
 
     <script>
-        function uploadFile() {
-            // Mostra lo spinner di caricamento
-            document.getElementById('loading-spinner').style.display = 'flex';
-
-            // Prepara i dati del modulo per il caricamento
-            const formData = new FormData(document.getElementById('upload-form'));
-
-            fetch('../import_table.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Nascondi lo spinner dopo il completamento
-                document.getElementById('loading-spinner').style.display = 'none';
-
-                // Visualizza il riepilogo
-                document.getElementById('successful-inserts').innerText = `Righe inserite: ${data.successful_inserts}`;
-                document.getElementById('skipped-rows').innerText = `Righe saltate: ${data.skipped_rows}`;
-                document.getElementById('total-rows').innerText = `Righe totali: ${data.total_rows}`;
-                document.getElementById('summary').style.display = 'block'; // Mostra il riepilogo
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('loading-spinner').style.display = 'none'; // Nascondi lo spinner in caso di errore
-            });
-        }
-
-        function deleteTable() {
-            if (confirm("Sei sicuro di voler eliminare la tabella? Questa azione è irreversibile.")) {
-                fetch('delete_table.php', {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert("Errore: " + data.error);
-                    } else {
-                        // Mostra il numero di righe eliminate
-                        alert(data.message);
-                        document.getElementById('deleted-rows').innerText = `Righe eliminate: ${data.row_count}`; // Mostra le righe eliminate
-                        document.getElementById('summary').style.display = 'block'; // Mostra il riepilogo
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert("Errore durante la richiesta di eliminazione della tabella.");
-                });
-            }
-        }
 
         function closeSummary() {
             document.getElementById('summary').style.display = 'none'; // Nascondi il riepilogo
