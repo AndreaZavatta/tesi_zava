@@ -1,21 +1,18 @@
 <?php
+require "../db_connection.php";
 session_start();
 
-// Connessione al database
-// Connect to MySQL server (without specifying the database first)
-$connection = new mysqli('127.0.0.1', 'root', '', 'prova', 3306);
-
-// Controllo connessione
-if ($connection->connect_error) {
-    die("Connessione fallita: " . $connection->connect_error);
-}
 
 $errorMessage = '';
 
+// Select the database if not already done
+$connection->select_db($dbName);
+
 // Funzione per verificare il login
 function login($username, $password, $connection) {
-    global $errorMessage; // Per gestire il messaggio di errore all'interno della funzione
+    global $errorMessage; // For handling error messages within the function
 
+    // Prepare and execute the query
     $stmt = $connection->prepare("SELECT * FROM admin WHERE username = ?");
     $stmt->bind_param('s', $username);
     $stmt->execute();
@@ -23,7 +20,7 @@ function login($username, $password, $connection) {
     $admin = $result->fetch_assoc();
 
     if ($admin && password_verify($password, $admin['password_hash'])) {
-        // Imposta la sessione per l'admin autenticato
+        // Set session for the authenticated admin
         $_SESSION['admin_id'] = $admin['id'];
         header('Location: ../dashboard/dashboard.php');
         exit();

@@ -1,27 +1,8 @@
 <?php
+require "../db_connection.php";
 session_start();
 
-// Connect to MySQL server (without specifying the database first)
-$connection = new mysqli('127.0.0.1', 'root', '', '', 3306);
 
-// Check connection
-if ($connection->connect_error) {
-    die("Connection failed: " . $connection->connect_error);
-}
-
-// Check if the database exists
-$dbName = 'prova';
-$dbCheck = $connection->query("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$dbName'");
-
-if ($dbCheck->num_rows == 0) {
-    // If database doesn't exist, create it
-    $createDB = "CREATE DATABASE $dbName";
-    if ($connection->query($createDB) === TRUE) {
-        echo "Database created successfully";
-    } else {
-        die("Error creating database: " . $connection->error);
-    }
-}
 
 // Now select the database
 $connection->select_db($dbName);

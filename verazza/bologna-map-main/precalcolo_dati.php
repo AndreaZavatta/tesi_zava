@@ -1,5 +1,5 @@
 <?php
-require "utilities.php";
+require "./utilities.php";
 
 $connection = connection();
 $mesi = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
