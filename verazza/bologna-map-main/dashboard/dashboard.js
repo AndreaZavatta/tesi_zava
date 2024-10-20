@@ -41,7 +41,7 @@ function showActiveTab(){
 }
 
 document.addEventListener("DOMContentLoaded", function() {
-
+        progressInterval = '';
         showActiveTab();
 
         document.getElementById('stop-import-btn').addEventListener('click', function() {
@@ -69,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             // Prepare form data
             const formData = new FormData(document.getElementById('upload-form'));
-            const progressInterval = setInterval(updateProgress, 1000);
+            progressInterval = setInterval(updateProgress, 1000);
             fetch('../import_table.php', {
                 method: 'POST',
                 body: formData
