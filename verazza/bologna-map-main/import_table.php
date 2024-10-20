@@ -1,7 +1,6 @@
 <?php
 require "./db_connection.php";
 session_start();
-
 // Funzione per creare le tabelle se non esistono
 function createTables($connection) {
     $queries = [
@@ -10,7 +9,7 @@ function createTables($connection) {
             nome VARCHAR(255) NOT NULL UNIQUE,
             descrizione TEXT
         )",
-        "CREATE TABLE IF NOT EXISTS spira (
+        "CREATE TABLE IF NOT EXISTS spire (
             id INT AUTO_INCREMENT PRIMARY KEY,
             codice_spira VARCHAR(255) NOT NULL,
             livello VARCHAR(255),
@@ -58,7 +57,7 @@ function createTables($connection) {
         mattina INT,
         pomeriggio INT,
         sera INT,
-        FOREIGN KEY (spira_id) REFERENCES spira(id)
+        FOREIGN KEY (spira_id) REFERENCES spire(id)
     )"
     ];
 
@@ -72,14 +71,28 @@ function createTables($connection) {
 // Funzione per importare dati nelle tabelle
 // Your importData function
 function importData($connection) {
+
     $successful_inserts = 0;
     $skipped_rows = 0;
+    $processed_rows = 0;
 
+    $comune_id = '';
     if (isset($_FILES['csv_file']['tmp_name'])) {
         $csv_file_path = $_FILES['csv_file']['tmp_name'];
 
         if (($handle = fopen($csv_file_path, "r")) !== FALSE) {
             fgetcsv($handle); // Skip header
+            $total_rows = 0;
+            while (fgetcsv($handle, 1000, ";") !== FALSE) {
+                $total_rows++;
+            }
+            $_SESSION['total_rows'] = $total_rows;
+            $_SESSION['processed_rows'] = 0;
+            $_SESSION['stop_import'] = false;
+            session_write_close();
+
+            rewind($handle);
+            fgetcsv($handle);
 
             $nome_comune = 'Bologna'; // Assign 'Bologna' to a variable
             $query_comuni_check = "SELECT id FROM comuni WHERE nome = ?";
@@ -105,9 +118,15 @@ function importData($connection) {
 
                     $comune_id = $connection->insert_id; // Fetch the newly inserted comune's ID
                 }
-
             while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
-                // Extract data from CSV
+                session_start();  // Reopen the session to check the stop flag
+                if ($_SESSION['stop_import']) {
+                    // Stop the import if the flag is set
+                    session_write_close();
+                    break;
+                }
+                session_write_close();
+
                 $data_rilevazione = $data[0];
                 $codice_spira = $data[1];
                 $livello = $data[27];
@@ -121,9 +140,9 @@ function importData($connection) {
                 $giorno_settimana = $data[44];
 
                 // Station does not exist, insert it
-                $query_spira = "INSERT INTO spira (codice_spira, livello, tipologia, codice_arco, codice_via, nodo_da, nodo_a, longitudine, latitudine) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $query_spira = "INSERT INTO spire (codice_spira, livello, tipologia, codice_arco, codice_via, nodo_da, nodo_a, longitudine, latitudine, comune_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                 $stmt_spira = $connection->prepare($query_spira);
-                $stmt_spira->bind_param('sssssssss', $codice_spira, $livello, $tipologia, $codice_arco, $codice_via, $nodo_da, $nodo_a, $longitudine, $latitudine);
+                $stmt_spira->bind_param('sssssssssi', $codice_spira, $livello, $tipologia, $codice_arco, $codice_via, $nodo_da, $nodo_a, $longitudine, $latitudine, $comune_id);
                 $stmt_spira->execute();
                 $spira_id = $connection->insert_id; // Fetch the newly inserted station's ID
 
@@ -166,6 +185,11 @@ function importData($connection) {
                 } else {
                     $skipped_rows++;
                 }
+
+                $processed_rows++;
+                session_start();
+                $_SESSION['processed_rows'] = $processed_rows;
+                session_write_close();
             }
 
             fclose($handle);
