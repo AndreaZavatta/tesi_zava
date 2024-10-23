@@ -13,15 +13,16 @@ function scripts(){
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script type="module" src="./js/utilities.js"></script>
+  <script src="./node_modules/heatmap.js/build/heatmap.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+  <script src="./js/leaflet-heatmap.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
   <script src="./js/map.js"></script>
   <script type="module" src="./js/controls.js"></script>
-  <script src="./node_modules/heatmap.js/build/heatmap.js"></script>
-  <script src="./js/leaflet-heatmap.js"></script>
   <script src="https://unpkg.com/leaflet.markerplayer"></script>
   ';
 }
+
 
 /**/
 function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $rotation = false, $rotationType = ""){
@@ -59,7 +60,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
       $query = "";
       //echo $startYear . " - ". $endYear;
       if($startYear != $endYear){
-        $query = $connection->prepare("SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-dati-mensili` WHERE mese BETWEEN ? AND 12 AND anno = ? OR mese BETWEEN 1 AND ? AND anno = ? OR mese BETWEEN 1 AND 12 AND anno > ? AND anno < ?");
+        $query = $connection->prepare("SELECT * FROM `rilevazione-flusso-veicoli` WHERE mese BETWEEN ? AND 12 AND anno = ? OR mese BETWEEN 1 AND ? AND anno = ? OR mese BETWEEN 1 AND 12 AND anno > ? AND anno < ?");
         //echo "SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-dati-mensili` WHERE mese BETWEEN " . $startMonth . " AND 12 AND anno = " . $startYear . " OR mese BETWEEN 1 AND " . $endMonth . " AND anno = " . $endYear . " OR mese BETWEEN 1 AND 12 AND anno > " . $startYear . " AND anno < " . $endYear;
         $query->bind_param("iiiiii", $startMonth, $startYear, $endMonth, $endYear, $startYear, $endYear);
         $query->execute();  

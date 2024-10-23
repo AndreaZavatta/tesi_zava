@@ -10,7 +10,7 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 // Array of table names to delete
-$tables = ['rilevazione_flusso_veicoli', 'spire', 'comuni'];
+$tables = ['dettagli_traffico', 'dettagli_generali', 'rilevazioni_traffico', 'vie', 'spire'];
 $errors = [];
 $deleted_tables = 0;
 
