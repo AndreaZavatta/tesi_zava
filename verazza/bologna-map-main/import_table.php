@@ -9,27 +9,30 @@ function createTables($connection) {
             nome VARCHAR(255) NOT NULL UNIQUE,
             descrizione TEXT
         )",
-        "CREATE TABLE IF NOT EXISTS spire (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            codice_spira VARCHAR(255) NOT NULL,
-            codimpsem VARCHAR(255),
-            longitudine VARCHAR(255),
-            latitudine VARCHAR(255),
-            geopoint VARCHAR(255),
-            ID_univoco_stazione_spira VARCHAR(255)
-        )",
 
         "CREATE TABLE IF NOT EXISTS vie (
             id INT AUTO_INCREMENT PRIMARY KEY,
             codice_via VARCHAR(255) NOT NULL,
-            Nome_via VARCHAR(255),
+            nome_via VARCHAR(255),
             codice_arco VARCHAR(255),
-            Nodo_da VARCHAR(255),
-            Nodo_a VARCHAR(255),
+            nodo_da VARCHAR(255),
+            nodo_a VARCHAR(255),
             direzione VARCHAR(255),
             comune_id INT, 
             FOREIGN KEY (comune_id) REFERENCES comuni(id)
         )",
+
+        "CREATE TABLE IF NOT EXISTS spire (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            codice_via INT,
+            codimpsem VARCHAR(255),
+            longitudine VARCHAR(255),
+            latitudine VARCHAR(255),
+            geopoint VARCHAR(255),
+            ID_univoco_stazione_spira VARCHAR(255),
+            FOREIGN KEY (codice_via) REFERENCES vie(id)
+        )",
+
 
         "CREATE TABLE IF NOT EXISTS rilevazioni_traffico (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -181,6 +184,24 @@ function importData($connection) {
                 $ID_univoco_stazione_spira = $data[43];
                 $giorno_settimana = $data[44];
 
+                                /*        
+            "CREATE TABLE IF NOT EXISTS vie (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        codice_via VARCHAR(255) NOT NULL,
+        Nome_via VARCHAR(255),
+        codice_arco VARCHAR(255),
+        Nodo_da VARCHAR(255),
+        Nodo_a VARCHAR(255),
+        direzione VARCHAR(255),
+        comune_id INT, 
+        FOREIGN KEY (comune_id) REFERENCES comuni(id)
+    )",*/
+            $query_spira = "INSERT INTO vie (codice_via, nome_via, codice_arco, nodo_da, nodo_a, direzione, comune_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $stmt_spira = $connection->prepare($query_spira);
+            $stmt_spira->bind_param('ssssssi', $codice_via, $nome_via, $codice_arco, $nodo_da, $nodo_a, $direzione, $comune_id);
+            $stmt_spira->execute();
+            $via_id = $connection->insert_id; // Fetch the newly inserted station's ID
+
                 /*
                         "CREATE TABLE IF NOT EXISTS spire (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -193,30 +214,11 @@ function importData($connection) {
         )",
                 */
                 // Station does not exist, insert it
-                $query_spira = "INSERT INTO spire (codice_spira, codimpsem, longitudine, latitudine, geopoint, ID_univoco_stazione_spira) VALUES (?, ?, ?, ?, ?, ?)";
+                $query_spira = "INSERT INTO spire (codice_via, codimpsem, longitudine, latitudine, geopoint, ID_univoco_stazione_spira) VALUES (?, ?, ?, ?, ?, ?)";
                 $stmt_spira = $connection->prepare($query_spira);
-                $stmt_spira->bind_param('ssssss', $codice_spira, $codimpsem, $longitudine, $latitudine, $geopoint, $ID_univoco_stazione_spira);
+                $stmt_spira->bind_param('ssssss', $via_id, $codimpsem, $longitudine, $latitudine, $geopoint, $ID_univoco_stazione_spira);
                 $stmt_spira->execute();
                 $spira_id = $connection->insert_id; // Fetch the newly inserted station's ID
-
-
-                /*        
-                "CREATE TABLE IF NOT EXISTS vie (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            codice_via VARCHAR(255) NOT NULL,
-            Nome_via VARCHAR(255),
-            codice_arco VARCHAR(255),
-            Nodo_da VARCHAR(255),
-            Nodo_a VARCHAR(255),
-            direzione VARCHAR(255),
-            comune_id INT, 
-            FOREIGN KEY (comune_id) REFERENCES comuni(id)
-        )",*/
-                $query_spira = "INSERT INTO vie (codice_via, Nome_via, codice_arco, Nodo_da, Nodo_a, direzione, comune_id) VALUES (?, ?, ?, ?, ?, ?, ?)";
-                $stmt_spira = $connection->prepare($query_spira);
-                $stmt_spira->bind_param('ssssssi', $codice_via, $nome_via, $codice_arco, $nodo_da, $nodo_a, $direzione, $comune_id);
-                $stmt_spira->execute();
-                $via_id = $connection->insert_id; // Fetch the newly inserted station's ID
 
 
         /*

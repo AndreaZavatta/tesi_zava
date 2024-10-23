@@ -70,9 +70,10 @@ function showTrafficData(data, startHour = 0, endHour = 24, wholeDay = true){
 		let lat = parseFloat(item["latitudine"]);
 		let long = parseFloat(item["longitudine"]);
 		let cars = 0;
-
+		console.log('zava endHour: '+endHour)
 		for (let i = startHour; i < endHour; i++) {
 			let hourKey = ('00' + i).slice(-2) + ":00-" + ('00' + (i + 1)).slice(-2) + ":00";
+			console.log('hourkey: '+hourKey);
 			let hourCars = item[hourKey];
 			cars += hourCars || 0; // Default to 0 if undefined
 			console.debug(`showTrafficData: Hour ${hourKey}: ${hourCars} cars, Cumulative: ${cars}`);
@@ -145,13 +146,20 @@ function showTrafficData(data, startHour = 0, endHour = 24, wholeDay = true){
 	let streetsTrafficWithDirection = {};
 	let dates = [];
 	let month_year = [];
-
+	if(wholeDay){
+		endHour = 24;
+	}
 	// Processing each traffic item
 	data.forEach((item, index) => {
 		console.log(`Processing item ${index + 1}/${data.length}`);
 		let lat = parseFloat(item["latitudine"]);
 		let long = parseFloat(item["longitudine"]);
+		console.log('lat '+lat);
+		console.log('long '+long)
 		let cars = 0;
+		console.log('startHour '+startHour);
+		console.log('endHour '+endHour);
+
 
 		// Sum cars for the relevant hours
 		for (let i = startHour; i < endHour; i++) {

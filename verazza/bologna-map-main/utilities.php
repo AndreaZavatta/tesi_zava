@@ -51,6 +51,13 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
   $endYear = explode("-", $endMonth->format("Y-m-d"))[0];
   $endMonth = explode("-", $endMonth->format("Y-m-d"))[1];
   $diff = date_diff($startDate, $endDate);
+  $init_query = 'SELECT *
+                  FROM comuni
+                  INNER JOIN vie ON comuni.id = vie.comune_id
+                  INNER JOIN spire ON vie.id = spire.codice_via
+                  INNER JOIN rilevazioni_traffico ON spire.id = rilevazioni_traffico.codice_spira
+                  INNER JOIN dettagli_traffico ON rilevazioni_traffico.id = dettagli_traffico.id_rilevazione
+                  INNER JOIN dettagli_generali ON rilevazioni_traffico.id = dettagli_generali.id_rilevazione';
   if($rotation == false || $rotation == "false"){
     //echo $endDate->format("Y-m-d");
     // ------------------ Reperimento dati mensili aggregati --------------------
@@ -60,14 +67,14 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
       $query = "";
       //echo $startYear . " - ". $endYear;
       if($startYear != $endYear){
-        $query = $connection->prepare("SELECT * FROM `rilevazione-flusso-veicoli` WHERE mese BETWEEN ? AND 12 AND anno = ? OR mese BETWEEN 1 AND ? AND anno = ? OR mese BETWEEN 1 AND 12 AND anno > ? AND anno < ?");
+        $query = $connection->prepare($init_query." WHERE mese BETWEEN ? AND 12 AND anno = ? OR mese BETWEEN 1 AND ? AND anno = ? OR mese BETWEEN 1 AND 12 AND anno > ? AND anno < ?");
         //echo "SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-dati-mensili` WHERE mese BETWEEN " . $startMonth . " AND 12 AND anno = " . $startYear . " OR mese BETWEEN 1 AND " . $endMonth . " AND anno = " . $endYear . " OR mese BETWEEN 1 AND 12 AND anno > " . $startYear . " AND anno < " . $endYear;
         $query->bind_param("iiiiii", $startMonth, $startYear, $endMonth, $endYear, $startYear, $endYear);
         $query->execute();  
       }
       else{
         //echo "ciao";
-        $query = $connection->prepare("SELECT * FROM `rilevazioni_traffico` WHERE mese BETWEEN ? AND ? AND anno = ?");
+        $query = $connection->prepare($init_query." WHERE mese BETWEEN ? AND ? AND anno = ?");
         $query->bind_param("iii", $startMonth, $endMonth, $startYear);
       }
       //echo "SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-dati-mensili` WHERE mese BETWEEN " . $startMonth . " AND " . $endMonth . " AND anno BETWEEN " . $startYear . " AND " . $endYear;
@@ -81,7 +88,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
     //Se il mese ed anno di fine ed inizio sono gli stessi
     if(explode("-", $api_formatted_startDate)[1] == explode("-", $api_formatted_endDate)[1] && explode("-", $api_formatted_startDate)[0] == explode("-", $api_formatted_endDate)[0]){
       //echo "stesso mese e stesso anno";
-      $query = $connection->prepare("SELECT * FROM `rilevazioni_traffico` WHERE data BETWEEN ? AND ?");
+      $query = $connection->prepare($init_query." WHERE data BETWEEN ? AND ?");
       $query->bind_param("ss", $api_formatted_startDate, $api_formatted_endDate);
       $query->execute();
       $result = $query->get_result();
@@ -95,7 +102,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
       $startOfEndMonth = date("Y-m-01", strtotime($api_formatted_endDate));
       //echo "SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-anno-2022` WHERE data BETWEEN " . $api_formatted_startDate . " AND ". $endOfStartingMonth . " AND data BETWEEN " . $startOfEndMonth . " AND ". $api_formatted_endDate;
       // SELECT * FROM `rilevazione-flusso-veicoli-tramite-spire-anno-2022` WHERE data BETWEEN 2021-10-30 AND 2021-10-31 AND data BETWEEN 2022-11-01 AND 2022-11-23 
-      $query = $connection->prepare("SELECT * FROM `rilevazioni_traffico` WHERE data BETWEEN ? AND ? OR data BETWEEN ? AND ?");
+      $query = $connection->prepare($init_query." WHERE data BETWEEN ? AND ? OR data BETWEEN ? AND ?");
       $query->bind_param("ssss", $api_formatted_startDate, $endOfStartingMonth, $startOfEndMonth, $api_formatted_endDate);
       $query->execute();
       $result = $query->get_result();
@@ -111,7 +118,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
         if($diff->format("%a") > 60){
           return;
         }
-        $query = $connection->prepare("SELECT * FROM `rilevazioni_traffico` WHERE data BETWEEN ? AND ?");
+        $query = $connection->prepare($init_query." WHERE data BETWEEN ? AND ?");
         $query->bind_param("ss", $api_formatted_startDate, $api_formatted_endDate);
         $query->execute();
         $result = $query->get_result();
@@ -127,7 +134,7 @@ function get_traffic_data($startDate, $endDate, $startHour = 0, $endHour = 24, $
           $endMonth = clone($endDate);
           $endYear = explode("-", $endMonth->format("Y-m-d"))[0];
           $endMonth = explode("-", $endMonth->format("Y-m-d"))[1] - 1;        
-          $query = $connection->prepare("SELECT * FROM `rilevazioni_traffico` WHERE mese BETWEEN ? AND ? AND anno BETWEEN ? AND ?");
+          $query = $connection->prepare($init_query." WHERE mese BETWEEN ? AND ? AND anno BETWEEN ? AND ?");
           $query->bind_param("iiii", $startMonth, $endMonth, $startYear, $endYear);
           $query->execute();
           $result = $query->get_result();
