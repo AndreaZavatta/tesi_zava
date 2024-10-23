@@ -1,4 +1,4 @@
-import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
 
 createApp({
   data() {
@@ -126,7 +126,8 @@ function control_change(){
 				}	
 				else{
 					try{
-					showTrafficData(JSON.parse(result), parseInt(data["startHour"]), parseInt(data["endHour"]), data["entireDay"]);
+						console.log(result);
+						showTrafficData(JSON.parse(result), parseInt(data["startHour"]), parseInt(data["endHour"]), data["entireDay"]);
 					}
 					catch{
 						console.log("error on json parse");

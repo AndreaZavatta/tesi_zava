@@ -235,7 +235,7 @@ function importData($connection) {
 
                 $query_spira = "INSERT INTO rilevazioni_traffico (`data`,codice_spira, giorno_settimana, giorno, mese, anno) VALUES (?, ?, ?, ?, ?, ?)";
                 $stmt_spira = $connection->prepare($query_spira);
-                $stmt_spira->bind_param('sissss', $data,$spira_id, $giorno_settimana, $giorno, $mese, $anno);
+                $stmt_spira->bind_param('sissss', $data_rilevazione,$spira_id, $giorno_settimana, $giorno, $mese, $anno);
                 $stmt_spira->execute();
                 $rilevazioni_traffico_id = $connection->insert_id; // Fetch the newly inserted station's ID
 
